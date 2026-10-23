@@ -68,6 +68,15 @@ This bubble chart displays all candidates running for the U.S. House of Represen
 
 target_counties <- c("Broward", "Miami-Dade", "Monroe", "Palm Beach")
 
+# Candidate running as No Party Affiliation (Independent) in District 26
+hosey_data <- tibble(
+  county_name = "Miami-Dade",
+  district = "District 26",
+  candidate = "Deborah Ann Meidinger Hosey",
+  party = "NPA",
+  votes = 0
+)
+
 congress_data <- election_data |>
   filter(
     county_name %in% target_counties,
@@ -78,6 +87,7 @@ congress_data <- election_data |>
     votes = sum(votes, na.rm = TRUE),
     .by = c(county_name, district, candidate, party)
   ) |>
+  bind_rows(hosey_data) |>
   mutate(candidate_label = paste0(candidate, " (", district, ")"))
 
 ggplot(
@@ -90,8 +100,8 @@ ggplot(
   )
 ) +
   geom_point(alpha = 0.7) +
-  scale_size_area(max_size = 8, labels = label_comma()) +
-  scale_color_manual(values = c("DEM" = "#2E5B88", "REP" = "#D9534F")) +
+  scale_size_continuous(range = c(2, 8), labels = label_comma()) +
+  scale_color_manual(values = c("DEM" = "#2E5B88", "REP" = "#D9534F", "NPA" = "#7F7F7F")) +
   scale_x_discrete(drop = FALSE) +
   labs(
     title = "Candidates for U.S. House of Representatives",
@@ -100,7 +110,7 @@ ggplot(
     y = "Candidate",
     size = "Votes Cast",
     color = "Party",
-    caption = "Note: Monroe County (District 28) had no contested primary for Representative in Congress."
+    caption = "Note: Deborah Ann Meidinger Hosey is an NPA general election candidate (0 primary votes).\nMonroe County (District 28) had no contested primary for Representative in Congress."
   ) +
   theme_minimal() +
   theme(
