@@ -1,5 +1,5 @@
 ---
-title: "2026 Florida Republican Gubernatorial Primary"
+title: "Florida Primary Election Analysis"
 author: Melissa Gonzalez- Ortiz
 format: html
 execute:
@@ -27,14 +27,14 @@ if (!dir.exists("data")) {
 
 files <- list.files("data", pattern = "\\.txt$", full.names = TRUE)
 
-# Read precinct-level results selecting office, candidate, party, and vote count
+# Read precinct-level results selecting county, office, district, candidate, party, and vote count
 election_data <- read_tsv(
   files,
   col_names = FALSE,
   show_col_types = FALSE,
-  col_select = c(12, 15, 16, 19)
+  col_select = c(2, 12, 13, 15, 16, 19)
 ) |>
-  set_names(c("office", "candidate", "party", "votes"))
+  set_names(c("county_name", "office", "district", "candidate", "party", "votes"))
 ```
 
 ```{r}
@@ -55,4 +55,56 @@ ggplot(rep_gov, aes(x = total_votes, y = reorder(candidate, total_votes))) +
     y = NULL
   ) +
   theme_minimal()
+```
+
+## Congressional Races in South Florida
+
+This bubble chart displays all candidates running for the U.S. House of Representatives in Miami-Dade, Broward, Palm Beach, and Monroe counties. Bubble size indicates votes received in each county.
+
+```{r}
+#| label: plot-congress-bubbles
+#| fig-height: 11
+#| fig-width: 9
+
+target_counties <- c("Broward", "Miami-Dade", "Monroe", "Palm Beach")
+
+congress_data <- election_data |>
+  filter(
+    county_name %in% target_counties,
+    office == "Representative in Congress",
+    !candidate %in% c("OverVotes", "UnderVotes")
+  ) |>
+  summarize(
+    votes = sum(votes, na.rm = TRUE),
+    .by = c(county_name, district, candidate, party)
+  ) |>
+  mutate(candidate_label = paste0(candidate, " (", district, ")"))
+
+ggplot(
+  congress_data,
+  aes(
+    x = factor(county_name, levels = target_counties),
+    y = fct_reorder(candidate_label, votes, .fun = sum),
+    size = votes,
+    color = party
+  )
+) +
+  geom_point(alpha = 0.7) +
+  scale_size_area(max_size = 8, labels = label_comma()) +
+  scale_color_manual(values = c("DEM" = "#2E5B88", "REP" = "#D9534F")) +
+  scale_x_discrete(drop = FALSE) +
+  labs(
+    title = "Candidates for U.S. House of Representatives",
+    subtitle = "2026 Primary Election votes across South Florida counties",
+    x = "County",
+    y = "Candidate",
+    size = "Votes Cast",
+    color = "Party",
+    caption = "Note: Monroe County (District 28) had no contested primary for Representative in Congress."
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_text(size = 8),
+    panel.grid.minor = element_blank()
+  )
 ```
