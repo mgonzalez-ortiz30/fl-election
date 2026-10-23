@@ -1,0 +1,58 @@
+---
+title: "2026 Florida Republican Gubernatorial Primary"
+author: Melissa Gonzalez- Ortiz
+format: html
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: setup
+library(tidyverse)
+library(scales)
+```
+
+## Overview
+
+This analysis examines the results of the 2026 Florida Republican primary election for Governor using precinct-level voting data.
+
+```{r}
+#| label: load-data
+# Ensure the precinct data files are extracted
+if (!dir.exists("data")) {
+  unzip("2026-pri-outputofficial.zip", exdir = "data")
+}
+
+files <- list.files("data", pattern = "\\.txt$", full.names = TRUE)
+
+# Read precinct-level results selecting office, candidate, party, and vote count
+election_data <- read_tsv(
+  files,
+  col_names = FALSE,
+  show_col_types = FALSE,
+  col_select = c(12, 15, 16, 19)
+) |>
+  set_names(c("office", "candidate", "party", "votes"))
+```
+
+```{r}
+#| label: plot-republican-governor
+# Aggregate total votes for Republican gubernatorial candidates
+rep_gov <- election_data |>
+  filter(office == "Governor", party == "REP") |>
+  summarize(total_votes = sum(votes, na.rm = TRUE), .by = candidate)
+
+# Create a horizontal bar chart of vote totals
+ggplot(rep_gov, aes(x = total_votes, y = reorder(candidate, total_votes))) +
+  geom_col(fill = "steelblue") +
+  scale_x_continuous(labels = label_comma()) +
+  labs(
+    title = "2026 Florida Republican Primary for Governor",
+    subtitle = "Total votes cast by candidate across all Florida counties",
+    x = "Total Votes",
+    y = NULL
+  ) +
+  theme_minimal()
+```
